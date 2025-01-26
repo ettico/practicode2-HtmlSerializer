@@ -21,16 +21,16 @@ namespace project2_Html_Serializer
         {
             this.Attributes = new List<Match>();
             this.Classes = new List<string>();
-            this.Children= new List<HtmlElement>();
+            this.Children = new List<HtmlElement>();
         }
         public IEnumerable<HtmlElement> Descendants()
         {
-           // HtmlElement current = root;
+            // HtmlElement current = root;
             Queue<HtmlElement> result = new Queue<HtmlElement>();
             result.Enqueue(this);
-            while(result.Count > 0)
+            while (result.Count > 0)
             {
-                var element= result.Dequeue();
+                var element = result.Dequeue();
                 yield return element;
                 foreach (var child in element.Children)
                 {
@@ -42,34 +42,60 @@ namespace project2_Html_Serializer
         {
             var current = this;
 
-           while(current.Parent != null)
-           {
+            while (current.Parent != null)
+            {
                 current = current.Parent;
                 yield return current;
-           }
-        }
-        public List<HtmlElement> HtmlElementsWithSelector( Selector selector)
-        {
-            HashSet<HtmlElement> result = new HashSet<HtmlElement>();
-            RecursiveScan(this, selector, result);
-            return result.ToList();
-        }
-        private static void RecursiveScan(HtmlElement htmlElement, Selector selector, HashSet<HtmlElement> HashHtmlElements)
-        {
-            if (selector == null)
-            {
-                return;
             }
-            List<HtmlElement> descendants = htmlElement.Descendants().ToList();
-            foreach (HtmlElement element in descendants)
+        }
+        public override string ToString()
+        {
+            string str = $"Name: {Name}, Id: {Id}, Attributes: ";
+            foreach (var a in Attributes)
             {
-                if (selector.Id == element.Id && selector.TagName == element.Name && selector.Classes.Any(x => element.Classes.Contains(x)))
+                str += a + " ";
+            }
+            str += "Classes: ";
+            foreach (var c in Classes)
+            {
+                str += c + " ";
+            }
+            str += $"InnerText: {InnerHtml}";
+            return str;
+        }
+
+        //---------------------------------------------------------------------
+        public HashSet<HtmlElement> FindElementsBySelector(Selector selector)
+        {
+            HashSet<HtmlElement> hashSetElements = new HashSet<HtmlElement>();
+            FindElementsBySelectorRecursive(this, selector, hashSetElements);
+            return hashSetElements;
+        }
+        public void FindElementsBySelectorRecursive(HtmlElement htmlElement, Selector selector, HashSet<HtmlElement> setElements)
+        {
+            var listElements = htmlElement.Descendants().Where(element => EqualHtmlElementAndSelector(element, selector)).ToList();
+
+            if (selector.Child == null)
+            {
+                setElements.UnionWith(listElements);
+            }
+            else
+            {
+                foreach (var lstelement in listElements)
                 {
-                    HashHtmlElements.Add(element);
+                    FindElementsBySelectorRecursive(lstelement, selector.Child, setElements);
                 }
             }
-            RecursiveScan(htmlElement, selector.Child, HashHtmlElements);
-
+        }
+        public bool EqualHtmlElementAndSelector(HtmlElement rootElement, Selector rootSelector)
+        {
+            foreach (string class1 in rootSelector.Classes)
+            {
+                if (!rootElement.Classes.Contains(class1))
+                    return false;
+            }
+            return (rootElement.Name == rootSelector.TagName || rootSelector.TagName == null) &&
+               (rootElement.Id == rootSelector.Id || rootSelector.Id == null);
         }
     }
 }
